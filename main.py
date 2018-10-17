@@ -1,3 +1,17 @@
+# ID: cl656
+# Section & Course: apriori, cs634
+# File name: cs634_CheYuLin_apriori.py
+# Due date:
+# This program is use to find frequent item set using apriori with a specific minimum support.
+# It takes three parameter for clean data
+#
+#  python3 main.py clean.txt support output.txt
+#
+# and four for unclean data, which adds a mapping file [map.txt]
+#
+#  python3 main.py dirty.txt map.txt support output.txt
+#
+#
 import sys
 import logging
 
@@ -8,14 +22,17 @@ logger.setLevel('DEBUG')
 
 
 def clean(inputFile, mappingFile):
+    '''
+    Clean up inputFile with mappingFile
+    '''
     logger.info('Cleaning file {} with mapping data {}...'.format(
         inputFile, mappingFile))
 
     # Generate mapping and reversMapping dictionary
     logger.debug('Generating mapping dictionary')
-    mapping={}
-    reversMapping={}
-    with open(mappingFile,'r') as inputF:
+    mapping = {}
+    reversMapping = {}
+    with open(mappingFile, 'r') as inputF:
         for line in inputF:
             index, name = line.split()
             mapping[index] = name
@@ -26,28 +43,41 @@ def clean(inputFile, mappingFile):
 
     # Start to clean up transaction with mapping & reverseMapping dict.
     logger.debug('Start to clean file')
-    cleanedFile = 'tempCleaned.txt' # Store the temprary cleaned file in 'tempCleaned.txt'
-    with open(cleanedFile,'w+') as output:  # Open temporary cleaned file
+    # Store the temprary cleaned file in 'tempCleaned.txt'
+    cleanedFile = 'tempCleaned.txt'
+    with open(cleanedFile, 'w+') as output:  # Open temporary cleaned file
         line = ''
-        with open(inputFile,'r') as inputF: # Open uncleaned input file
+        with open(inputFile, 'r') as inputF:
+            # Loop through lines in input file.
             for line in inputF:
-                keep = []
-                line = line.replace(';',' ')    # Replace every semicolumn with space
+                keep = []   # Used to store valid items in transaction
+                line = line.replace(';', ' ')
                 elements = line.split()         # Seperate element with space
-                logger.debug('Original elements: len({}) data:{}'.format(len(elements),elements))
-                for element in elements:        # Loop through ever element in one line(one transaction)
-                    if element in mapping:      # If element is a valid PXX format inside mappingFile given
+                logger.debug('Original elements: len({}) data:{}'.format(
+                    len(elements), elements))
+                # Loop through ever element in one line(one transaction)
+                for element in elements:
+                    # If element is in valid PXX format inside mappingFile given
+                    if element in mapping:
                         keep.append(element)
-                    elif element in reversMapping: # If element is listed as String in mappingFile then reverse it to PXX format
+                    # If element is listed as String in mappingFile then reverse it to PXX format
+                    elif element in reversMapping:
                         keep.append(reversMapping[element])
-                logger.debug('Cleaned elements: len({}) data:{}'.format(len(keep),keep))
-                output.write(' '.join(keep)+'\n') # Save cleaned transaction in to cleanedfile
+
+                logger.debug(
+                    'Cleaned elements: len({}) data:{}'.format(len(keep), keep))
+                # Save cleaned transaction in to cleanedfile
+                output.write(' '.join(keep)+'\n')
     # Filed cleaned
     logger.info('File cleaned, storing cleaned file at {}.'.format(cleanedFile))
     return cleanedFile
 
 
-def apriori(inputFile, outputFile, minimumSupport):
+def apriori(inputFile, outputFile, minimumSupport=3):
+    '''
+    Find out frequent item set with apriori,
+    default minimumSupport is 3
+    '''
     logger.info('Applying apriori with minimum support {} on {}'.format(
         minimumSupport, inputFile))
     logger.info('Saving result to {}'.format(outputFile))
