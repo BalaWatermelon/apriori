@@ -47,13 +47,12 @@ def clean(inputFile, mappingFile):
     # Store the temprary cleaned file in 'tempCleaned.txt'
     cleanedFile = 'tempCleaned.txt'
     with open(cleanedFile, 'w+') as output:  # Open temporary cleaned file
-        line = ''
         with open(inputFile, 'r') as inputF:
             # Loop through lines in input file.
             for line in inputF:
                 keep = []   # Used to store valid items in transaction
                 line = line.replace(';', ' ')
-                elements = line.split()         # Seperate element with space
+                elements = line.split() # Seperate element with space
                 logger.debug('Original elements: len({}) data:{}'.format(
                     len(elements), elements))
                 # Loop through ever element in one line(one transaction)
