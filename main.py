@@ -1,7 +1,7 @@
 # ID: cl656
 # Section & Course: apriori, cs634
 # File name: cs634_CheYuLin_apriori.py
-# Due date:
+# Due date: 11:59pm on Monday Oct. 29
 # This program is use to find frequent item set using apriori with a specific minimum support.
 # It takes three parameter for clean data
 #
@@ -33,6 +33,7 @@ def clean(inputFile, mappingFile):
     mapping = {}
     reversMapping = {}
     with open(mappingFile, 'r') as inputF:
+        # Loop through lines and store index:name & name:index mapping
         for line in inputF:
             index, name = line.split()
             mapping[index] = name
@@ -57,10 +58,10 @@ def clean(inputFile, mappingFile):
                     len(elements), elements))
                 # Loop through ever element in one line(one transaction)
                 for element in elements:
-                    # If element is in valid PXX format inside mappingFile given
+                    # Store element if it's in valid PXX format inside mappingFile given
                     if element in mapping:
                         keep.append(element)
-                    # If element is listed as String in mappingFile then reverse it to PXX format
+                    # Store element if it's listed as String in mappingFile then reverse it to PXX format
                     elif element in reversMapping:
                         keep.append(reversMapping[element])
 
@@ -68,7 +69,7 @@ def clean(inputFile, mappingFile):
                     'Cleaned elements: len({}) data:{}'.format(len(keep), keep))
                 # Save cleaned transaction in to cleanedfile
                 output.write(' '.join(keep)+'\n')
-    # Filed cleaned
+    # File cleaned
     logger.info('File cleaned, storing cleaned file at {}.'.format(cleanedFile))
     return cleanedFile
 
