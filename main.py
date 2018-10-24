@@ -52,7 +52,7 @@ def clean(inputFile, mappingFile):
             for line in inputF:
                 keep = []   # Used to store valid items in transaction
                 line = line.replace(';', ' ')
-                elements = line.split() # Seperate element with space
+                elements = line.split()  # Seperate element with space
                 logger.debug('Original elements: len({}) data:{}'.format(
                     len(elements), elements))
                 # Loop through ever element in one line(one transaction)
@@ -76,12 +76,55 @@ def clean(inputFile, mappingFile):
 def apriori(inputFile, outputFile, minimumSupport=3):
     '''
     Find out frequent item set with apriori,
-    default minimumSupport is 3
+    default minimumSupport set to 3
     '''
     logger.info('Applying apriori with minimum support {} on {}'.format(
         minimumSupport, inputFile))
+    l = []
+    candidate = []
+    l.append(find_frequent_1_itemsets(inputFile, minimumSupport))
+    logger.debug('First generation {}'.format(l[0]))
+    k = 1
+    while len(l[k-1]) > 0:
+        candidate[k] = apriori_gen(l[k-1])
+        with open(inputFile,'r') as f:
+            for transaction in f:
+                
+        k+=1
+
+
     logger.info('Saving result to {}'.format(outputFile))
     pass
+
+
+def apriori_gen(itemSets):
+    r = []
+    for itemSetA in itemSets:
+        for itemSetB in itemSets:
+            if itemSetA != itemSetB:
+                c = set(itemSetA + itemSetB) # Join setA setB
+                if not has_infrequent_subset(c, itemSets):
+                    r.append(c)
+    return r
+
+
+def has_infrequent_subset(candidate, itemSets):
+    pass
+
+
+def find_frequent_1_itemsets(inputFile, minimumSupport):
+    l = dict()  # Store each item appearence
+    with open(inputFile, 'r') as f:
+        for line in f:
+            line = list(set(line.split()))
+            for element in line:
+                if element in l:
+                    l[element] += 1
+                else:
+                    l[element] = 0
+    r = [key for key in l if l[key] >= minimumSupport]
+    logger.debug('First statistic {}'.format(l))
+    return r
 
 
 if __name__ == '__main__':
