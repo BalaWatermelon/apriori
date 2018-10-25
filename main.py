@@ -80,8 +80,10 @@ class candidate:
 
     def __str__(self):
         return 'candidate<{}, count:{}>'.format(self.value, self.count)
+
     def __repr__(self):
         return 'candidate<{}, count:{}>'.format(self.value, self.count)
+
 
 def apriori(inputFile, outputFile, minimumSupport=3):
     '''
@@ -102,16 +104,17 @@ def apriori(inputFile, outputFile, minimumSupport=3):
         with open(inputFile, 'r') as f:
             for line in f:
                 transaction = line.strip().split()
-                if not len(transaction)<k+1: # Skip transaction that has less item than candidate, speeds up program
+                # Skip transaction that has less item than candidate, speeds up program
+                if not len(transaction) < k+1:
                     transaction = set(transaction)
                     for c in candidates:
-                        if set(c.value) < transaction: # if candidate is a subset of t
+                        if set(c.value) < transaction:  # if candidate is a subset of t
                             c.count += 1
         temp = [c.value for c in candidates if c.count >= minimumSupport]
         l.append(temp)
         k += 1
     logger.debug('Result: {}'.format(l))
-    with open(outputFile,'w+') as f:
+    with open(outputFile, 'w+') as f:
         for iteration in l:
             for element in iteration:
                 f.write('[{}], '.format(' '.join(element)))
@@ -125,11 +128,11 @@ def apriori_gen(itemSets):
     for itemSetA in itemSets:
         for itemSetB in itemSets:
             if itemSetA != itemSetB:
-                c = list(set(itemSetA)|set(itemSetB))  # Join setA setB
+                c = list(set(itemSetA) | set(itemSetB))  # Join setA setB
                 if not has_infrequent_subset(c, itemSets):
                     if c not in r:
                         r.append(c)
-    r = [ candidate(c) for c in r]
+    r = [candidate(c) for c in r]
     return r
 
 
