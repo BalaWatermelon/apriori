@@ -73,6 +73,16 @@ def clean(inputFile, mappingFile):
     return cleanedFile
 
 
+class candidate:
+    def __init__(self, value, count=0):
+        self.value = value
+        self.count = 0
+
+    def __str__(self):
+        return 'candidate<{}, count:{}>'.format(self.value, self.count)
+    def __repr__(self):
+        return 'candidate<{}, count:{}>'.format(self.value, self.count)
+
 def apriori(inputFile, outputFile, minimumSupport=3):
     '''
     Find out frequent item set with apriori,
@@ -81,18 +91,31 @@ def apriori(inputFile, outputFile, minimumSupport=3):
     logger.info('Applying apriori with minimum support {} on {}'.format(
         minimumSupport, inputFile))
     l = []
-    candidate = []
+    candidates = []
     l.append(find_frequent_1_itemsets(inputFile, minimumSupport))
     logger.debug('First generation {}'.format(l[0]))
     k = 1
     while len(l[k-1]) > 0:
-        candidate[k] = apriori_gen(l[k-1])
-        with open(inputFile,'r') as f:
-            for transaction in f:
-                
-        k+=1
-
-
+        logger.debug('Running iteration {}'.format(k))
+        candidates = apriori_gen(l[k-1])
+        logger.debug('Current candidates {}'.format(candidates))
+        with open(inputFile, 'r') as f:
+            for line in f:
+                transaction = line.strip().split()
+                if not len(transaction)<k+1: # Skip transaction that has less item than candidate, speeds up program
+                    transaction = set(transaction)
+                    for c in candidates:
+                        if set(c.value) < transaction: # if candidate is a subset of t
+                            c.count += 1
+        temp = [c.value for c in candidates if c.count >= minimumSupport]
+        l.append(temp)
+        k += 1
+    logger.debug('Result: {}'.format(l))
+    with open(outputFile,'w+') as f:
+        for iteration in l:
+            for element in iteration:
+                f.write('[{}], '.format(' '.join(element)))
+            f.write('\n')
     logger.info('Saving result to {}'.format(outputFile))
     pass
 
@@ -102,14 +125,34 @@ def apriori_gen(itemSets):
     for itemSetA in itemSets:
         for itemSetB in itemSets:
             if itemSetA != itemSetB:
-                c = set(itemSetA + itemSetB) # Join setA setB
+                c = list(set(itemSetA)|set(itemSetB))  # Join setA setB
                 if not has_infrequent_subset(c, itemSets):
-                    r.append(c)
+                    if c not in r:
+                        r.append(c)
+    r = [ candidate(c) for c in r]
     return r
 
 
 def has_infrequent_subset(candidate, itemSets):
-    pass
+    '''
+    Find if candidate contains infrequent subset from itemSet it gen from
+    '''
+    for s in subset(candidate):
+        if s not in itemSets:
+            return True
+    return False
+
+
+def subset(itemSet):
+    '''
+    Return subsetOfLength(length of item in itemSet - 1) of itemSet
+    '''
+    r = []
+    for i in itemSet:
+        q = list(itemSet)
+        q.remove(i)
+        r.append(q)
+    return r
 
 
 def find_frequent_1_itemsets(inputFile, minimumSupport):
@@ -122,7 +165,7 @@ def find_frequent_1_itemsets(inputFile, minimumSupport):
                     l[element] += 1
                 else:
                     l[element] = 0
-    r = [key for key in l if l[key] >= minimumSupport]
+    r = [[key] for key in l if l[key] >= minimumSupport]
     logger.debug('First statistic {}'.format(l))
     return r
 
