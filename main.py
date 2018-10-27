@@ -32,12 +32,15 @@ def clean(inputFile, mappingFile):
     logger.debug('Generating mapping dictionary')
     mapping = {}
     reversMapping = {}
+    indexs = []
+    names = []
     with open(mappingFile, 'r') as inputF:
         # Loop through lines and store index:name & name:index mapping
         for line in inputF:
             index, name = line.split()
-            mapping[index] = name
             reversMapping[name] = index
+            indexs.append(index)
+            names.append(name)
     logger.debug('mapping: {}'.format(mapping))
     logger.debug('reversMapping: {}'.format(reversMapping))
     logger.debug('Mapping created')
@@ -46,6 +49,9 @@ def clean(inputFile, mappingFile):
     logger.debug('Start to clean file')
     # Store the temprary cleaned file in 'tempCleaned.txt'
     cleanedFile = 'tempCleaned.txt'
+    indexs = set(indexs)
+    names = set(names)
+    logger.debug(names)
     with open(cleanedFile, 'w+') as output:  # Open temporary cleaned file
         with open(inputFile, 'r') as inputF:
             # Loop through lines in input file.
@@ -55,19 +61,16 @@ def clean(inputFile, mappingFile):
                 elements = line.split()  # Seperate element with space
                 logger.debug('Original elements: len({}) data:{}'.format(
                     len(elements), elements))
-                # Loop through ever element in one line(one transaction)
-                for element in elements:
-                    # Store element if it's in valid PXX format inside mappingFile given
-                    if element in mapping:
-                        keep.append(element)
-                    # Store element if it's listed as String in mappingFile then reverse it to PXX format
-                    elif element in reversMapping:
-                        keep.append(reversMapping[element])
-
+                if set(elements) < indexs:  # Transaction is a proper subset of index
+                    output.write(' '.join(elements)+'\n')
+                if set(elements) < names: # Transaction is a proper subset of names
+                    # Change name to index and store
+                    for e in elements:
+                        output.write('{} '.format(reversMapping[e]))
+                    output.write('\n')
                 logger.debug(
                     'Cleaned elements: len({}) data:{}'.format(len(keep), keep))
                 # Save cleaned transaction in to cleanedfile
-                output.write(' '.join(keep)+'\n')
     # File cleaned
     logger.info('File cleaned, storing cleaned file at {}.'.format(cleanedFile))
     return cleanedFile
@@ -94,31 +97,31 @@ def apriori(inputFile, outputFile, minimumSupport=3):
         minimumSupport, inputFile))
     l = []
     candidates = []
-    l.append(find_frequent_1_itemsets(inputFile, minimumSupport))
+    l.append(find_frequent_1_itemsets(inputFile, minimumSupport, outputFile))
     logger.debug('First generation {}'.format(l[0]))
     k = 1
-    while len(l[k-1]) > 0:
-        logger.debug('Running iteration {}'.format(k))
-        candidates = apriori_gen(l[k-1])
-        logger.debug('Current candidates {}'.format(candidates))
-        with open(inputFile, 'r') as f:
-            for line in f:
-                transaction = line.strip().split()
-                # Skip transaction that has less item than candidate, speeds up program
-                if not len(transaction) < k+1:
-                    transaction = set(transaction)
-                    for c in candidates:
-                        if set(c.value) < transaction:  # if candidate is a subset of t
-                            c.count += 1
-        temp = [c.value for c in candidates if c.count >= minimumSupport]
-        l.append(temp)
-        k += 1
+    with open(outputFile, 'a') as o:
+        while len(l[k-1]) > 0:
+            logger.debug('Running iteration {}'.format(k))
+            candidates = apriori_gen(l[k-1])
+            logger.debug('Current candidates {}'.format(candidates))
+            with open(inputFile, 'r') as f:
+                for line in f:
+                    transaction = line.strip().split()
+                    # Skip transaction that has less item than candidate, speeds up program
+                    if not len(transaction) < k+1:
+                        transaction = set(transaction)
+                        for c in candidates:
+                            if set(c.value) < transaction:  # if candidate is a subset of t
+                                c.count += 1
+            temp = [c.value for c in candidates if c.count >= minimumSupport]
+            l.append(temp)
+            k += 1
+            for c in candidates:
+                if c.count >= minimumSupport:
+                    o.write(' '.join(c.value))
+                    o.write(' ({})\n'.format(c.count))
     logger.debug('Result: {}'.format(l))
-    with open(outputFile, 'w+') as f:
-        for iteration in l:
-            for element in iteration:
-                f.write('[{}], '.format(' '.join(element)))
-            f.write('\n')
     logger.info('Saving result to {}'.format(outputFile))
     pass
 
@@ -158,7 +161,7 @@ def subset(itemSet):
     return r
 
 
-def find_frequent_1_itemsets(inputFile, minimumSupport):
+def find_frequent_1_itemsets(inputFile, minimumSupport, outputFile):
     l = dict()  # Store each item appearence
     with open(inputFile, 'r') as f:
         for line in f:
@@ -168,6 +171,10 @@ def find_frequent_1_itemsets(inputFile, minimumSupport):
                     l[element] += 1
                 else:
                     l[element] = 0
+    with open(outputFile, 'w+') as o:
+        for key in l:
+            if l[key]>= minimumSupport:
+                o.write('{} ({})\n'.format(key,l[key]))
     r = [[key] for key in l if l[key] >= minimumSupport]
     logger.debug('First statistic {}'.format(l))
     return r
@@ -195,8 +202,8 @@ if __name__ == '__main__':
         except ValueError:
             logger.warning("Please enter valid minimum support number")
             sys.exit("Program terminated")
-        outpuFile = sys.argv[4]
+        outputFile = sys.argv[4]
         logger.info('Processing with dirty file {}'.format(dirtyFile))
         cleanedFile = clean(dirtyFile, mappingFile)
         logger.debug('Using cleaned file {}'.format(cleanedFile))
-        apriori(cleanedFile, outpuFile, minimumSupport)
+        apriori(cleanedFile, outputFile, minimumSupport)
